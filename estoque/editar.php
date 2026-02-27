@@ -21,6 +21,4 @@ require_once BASE_PATH . '/includes/cabecalho.php';
 
 
 
-
-
 <?php require_once BASE_PATH . '/includes/rodape.php'; ?>
