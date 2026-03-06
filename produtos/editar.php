@@ -1,84 +1,116 @@
 <?php
 require_once __DIR__ . '/../config.php';
 
+//buscar dados do usuario a ser editado
+//trazer os dados do usuario a ser editado
+//sobrescrever os dados do usuario
+//$_GET  < varredura no banco de dados
 
-$titulo = "Editar Produto |";
+//&& = mais de um verdadeiro
+//|| = apenas 1 verdadeiro
+// ! = = diferente de...
+
+$id = $_GET['id'] ?? null;
+
+if(!$id){
+    die("Usuário nao encontrado.");
+}
+
+$sql = "SELECT * FROM usuarios WHERE id = :id"; //selecionando
+$stmt = $conexao->prepare($sql); //preparando a busca
+$stmt->execute(['id'=> $id]); //executando o codigo sql
+$usuario = $stmt->fetch(PDO::FETCH_ASSOC);  //mostrando apenas um resultado
+
+if(!$usuario){
+    die("Usuário não encontrado.");
+}
+
+$nome = $usuario['nome'] ?? '';
+$email = $usuario['email'] ?? '';
+$mensagem_sucesso = '';
+$mensagem_erro = '';
+
+if($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id_post = $_POST['id'] ?? null;
+    $nome = $_POST['nome'] ?? null;
+    $email = $_POST['email'] ?? null;
+    $senha = $_POST['senha'] ?? null;
+    
+    // Validar consistência de ID
+    if ($id_post != $id) {
+        $mensagem_erro = "Erro: ID do usuário inválido.";
+    }
+    // Validar os dados
+    else if (empty($nome) || empty($email)) {
+        $mensagem_erro = "Nome e e-mail são obrigatórios.";
+    }
+    else {
+        try {
+            // Atualizar o usuário no banco de dados
+            $sql = "UPDATE usuarios SET nome = :nome, email = :email" . 
+            (!empty($senha) ? ", senha = :senha" : "") . " WHERE id = :id";
+            $stmt = $conexao->prepare($sql);
+            
+            $params = [
+                'nome' => $nome,
+                'email' => $email,
+                'id' => $id
+            ];
+
+            if (!empty($senha)) {
+                $params['senha'] = password_hash($senha, PASSWORD_DEFAULT);
+            }
+
+            $stmt->execute($params);
+            
+            $mensagem_sucesso = "Usuário atualizado com sucesso!";
+            
+            
+            header("Refresh: 2; url=" . BASE_URL . "/usuarios/listar.php");
+        } catch (Exception $e) {
+            $mensagem_erro = "Erro ao atualizar usuário: " . $e->getMessage();
+        }
+    }
+}
+
+$titulo = "Editar Usuário |";
 require_once BASE_PATH . '/includes/cabecalho.php';
 ?>
 
-
 <section class="mb-4 border rounded-3 p-4 border-primary-subtle">
-    <h3 class="text-center"><i class="bi bi-pencil-fill"></i> Editar Produto</h3>
+    <h3 class="text-center"><i class="bi bi-pencil-fill"></i> Editar Usuário</h3>
 
+    <?php if (!empty($mensagem_sucesso)): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($mensagem_sucesso); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
 
+    <?php if (!empty($mensagem_erro)): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle"></i> <?php echo htmlspecialchars($mensagem_erro); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
 
     <form method="post" class="w-75 mx-auto">
-
-        <fieldset>
-            <legend>Produto</legend>
-            <div class="form-group mb-3">
-                <label class="form-label" for="nome">Nome:</label>
-                <input value="Nome..." class="form-control" type="text" name="nome" id="nome">
-            </div>
-
-            <div class="form-group mb-3">
-                <label class="form-label" for="descricao">Descrição:</label>
-                <textarea class="form-control" name="descricao" id="descricao">Descrição...</textarea>
-            </div>
-
-            <div class="form-group mb-3">
-                <label class="form-label" for="preco">Preço:</label>
-                <input value="0" class="form-control" type="number" step="0.01" name="preco" id="preco">
-
-            </div>
-
-
-            <div class="form-group mb-3">
-                <label class="form-label" for="quantidade">Quantidade:</label>
-                <input value="0" class="form-control" type="number" name="quantidade" id="quantidade">
-            </div>
-
-            <div class="form-group mb-3">
-                <label class="form-label" for="fornecedor_id">Fornecedor:</label>
-                <select class="form-select" name="fornecedor_id" id="fornecedor_id">
-                    <option value=""></option>
-                    <option value="id do fornecedor..." selected>Nome do fornecedor...</option>
-                </select>
-            </div>
-        </fieldset>
-
-        <fieldset class="mt-4">
-            <legend>Detalhes do Produto</legend>
-            <div class="form-group mb-3">
-                <label class="form-label" for="peso">Peso (kg):</label>
-                <input value="0" class="form-control" type="number" step="0.01" name="peso" id="peso">
-            </div>
-
-            <div class="form-group mb-3">
-                <label for="dimensoes">Dimensões:</label>
-                <input value="0x0x0" class="form-control" type="text" name="dimensoes" id="dimensoes">
-            </div>
-
-            <div class="form-group mb-3">
-                <label for="codigo_barras">Código de Barras:</label>
-                <input value="000000" class="form-control" type="text" name="codigo_barras" id="codigo_barras">
-            </div>
-
-            <div class="form-group mb-3">
-                <label for="codigo_barras">Data de Validade:</label>
-                <input value="1975-12-21" class="form-control" type="date" name="data_validade" id="data_validade">
-            </div>
-
-
-        </fieldset>
-
-
+        <input type="hidden" name="id" value="<?php echo htmlspecialchars($id); ?>">
+        <div class="form-group">
+            <label for="nome" class="form-label">Nome:</label>
+            <input type="text" name="nome" class="form-control" id="nome" value="<?php echo htmlspecialchars($nome); ?>" required>
+        </div>
+        <div class="form-group">
+            <label for="email" class="form-label">E-mail:</label>
+            <input type="email" name="email" class="form-control" id="email" value="<?php echo htmlspecialchars($email); ?>" required>
+        </div>
+        <div class="form-group">
+            <label for="senha" class="form-label">Senha:</label>
+            <input type="password" name="senha" class="form-control" id="senha" placeholder="Preencha apenas se for alterar">
+        </div>
         <button class="btn btn-warning my-4" type="submit"><i class="bi bi-arrow-clockwise"></i> Salvar Alterações</button>
+        <a href="<?php echo BASE_URL; ?>/usuarios" class="btn btn-secondary my-4"><i class="bi bi-x-circle"></i> Cancelar</a>
     </form>
-
-
-
-
 </section>
 
 <?php require_once BASE_PATH . '/includes/rodape.php'; ?>

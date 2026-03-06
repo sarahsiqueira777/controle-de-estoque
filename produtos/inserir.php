@@ -14,7 +14,7 @@ require_once BASE_PATH . '/includes/cabecalho.php';
 
     <form method="post" class="w-75 mx-auto">
         <fieldset>
-            <legend>Produto</legend>
+            <legend>Produto</legend>=
             <div class="form-group mb-3">
                 <label class="form-label" for="nome">Nome:</label>
                 <input class="form-control" type="text" name="nome" id="nome">
